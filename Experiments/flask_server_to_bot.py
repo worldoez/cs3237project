@@ -1,8 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import psycopg2
 from psycopg2 import pool
 import requests
 from contextlib import contextmanager
+import time, threading
 
 app = Flask(__name__)
 
@@ -32,17 +33,56 @@ def get_db_connection():
 
 @app.route("/fetchData", methods=["GET"])
 def fetch_distance_from_other_server():
+    DIST_URL = "http://192.168.4.6:5001/getDistance"   # camera
+    IMU_URL  = "http://192.168.4.6:5000/control"       # imu server
+    timeout = 1.2
+
+    distance = None
+    distance_ts = None
+    command = None
+    command_ts = None
+
+    # 1) get distance (fault-tolerant)
     try:
-        responseDist = requests.get("http://192.168.4.6:5001/getDistance", timeout=5)
-        responseImu = requests.get("http://192.168.4.6:5000/control", timeout=5)
+        r_dist = requests.get(DIST_URL, timeout=timeout)
+        r_dist.raise_for_status()
+        j = r_dist.json()
+        # adapt to the other server's payload shape
+        if isinstance(j, dict) and "data" in j and "distance" in j["data"]:
+            distance = float(j["data"]["distance"])
+            distance_ts = float(j["data"].get("timestamp", time.time()))
+        else:
+            # try alternate shape
+            distance = float(j.get("distance", -1))
+            distance_ts = float(j.get("timestamp", time.time()))
+    except Exception as e:
+        distance = -1
+        distance_ts = time.time()
 
-        # print(responseDist.json())
-        print(responseImu.json())
-        responseDist.raise_for_status()
-        responseImu.raise_for_status()
+    # 2) get imu control (fault-tolerant)
+    try:
+        r_imu = requests.get(IMU_URL, timeout=timeout)
+        r_imu.raise_for_status()
+        j = r_imu.json()
+        command = j.get("command", None)
+        # server may or may not include timestamp; prefer returned 'timestamp' if present
+        command_ts = float(j.get("timestamp", time.time()))
+    except Exception as e:
+        command = None
+        command_ts = time.time()
 
-        distance = float(responseDist.json()["data"]["distance"])
-        command = responseImu.json()["command"]
+
+    # try:
+    #     responseDist = requests.get("http://192.168.4.6:5001/getDistance", timeout=5)
+    #     responseImu = requests.get("http://192.168.4.6:5000/control", timeout=5)
+
+    #     # print(responseDist.json())
+    #     print(responseImu.json())
+    #     responseDist.raise_for_status()
+    #     responseImu.raise_for_status()
+
+    #     distance = float(responseDist.json()["data"]["distance"])
+    #     command = responseImu.json()["command"]
 
         # with get_db_connection() as conn:
         #     with conn.cursor() as cur:
@@ -61,7 +101,8 @@ def fetch_distance_from_other_server():
             commandNum = 0
         elif distance >= 55:
             commandNum = 9
-        elif distance <= 25:
+        # elif distance <= 25:
+        elif distance is not None and distance <= 25 and distance >= 0:
             commandNum = 10
         elif command == "STRAIGHT":
             commandNum = 1
@@ -82,7 +123,30 @@ def fetch_distance_from_other_server():
         else:
             commandNum = 0
 
-        return str(commandNum)
+        # return str(commandNum)
+
+        # 3) Insert to DB asynchronously so response isn't blocked by DB slowness
+        def _db_insert_async(dist, dist_ts, cmd, cmd_ts, cmdnum):
+            try:
+                with get_db_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "INSERT INTO test_table (distance, distance_ts, command, command_ts, command_num) VALUES (%s,%s,%s,%s,%s)",
+                            (dist, dist_ts, cmd, cmd_ts, cmdnum),
+                        )
+            except Exception:
+                pass
+
+        threading.Thread(target=_db_insert_async, args=(distance, distance_ts, command, command_ts, commandNum), daemon=True).start()
+
+        return jsonify({
+        "ok": True,
+        "distance": distance,
+        "distance_ts": distance_ts,
+        "command": command,
+        "command_ts": command_ts,
+        "command_num": commandNum
+        })
 
     except requests.exceptions.RequestException as e:
         return jsonify({"ok": False, "error": str(e)}), 500

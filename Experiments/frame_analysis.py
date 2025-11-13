@@ -17,7 +17,8 @@ def preprocess_image(img):
 
 def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=0.5):
     OG_W, OG_H = 240, 240
-    url = "http://192.168.4.1:81/stream"
+    # url = "http://192.168.4.1:81/stream"
+    url = "http://<CAMERA_IP>:81/stream"   # replace <CAMERA_IP> with WiFi.localIP() shown on camera serial
 
     print("Connecting to ESP32 stream...")
     stream = requests.get(url, stream=True)

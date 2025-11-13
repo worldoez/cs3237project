@@ -117,19 +117,53 @@ void setup() {
   // Serial.println("");
   // Serial.println("WiFi connected");
 
-  const char* ap_ssid = "UGLL-E-CAM-WIFI";
-  const char* ap_password = "88888888";
+  // const char* ap_ssid = "UGLL-E-CAM-WIFI";
+  // const char* ap_password = "88888888";
 
-  WiFi.softAP(ap_ssid, ap_password);
-  WiFi.setSleep(false);
+  // Replace softAP with STA (connect to external hotspot)
+  const char* ext_ssid = "YourHotspotSSID";
+  const char* ext_pass = "YourHotspotPass";
 
-  Serial.println("");
-  Serial.print("WiFi AP started. Connect your Mac to Wi-Fi network: ");
-  Serial.println(ap_ssid);
-  Serial.print("Password: ");
-  Serial.println(ap_password);
-  Serial.print("Camera stream available at: http://");
-  Serial.println(WiFi.softAPIP());
+  WiFi.mode(WIFI_STA);
+  // Optional: assign a static IP on your hotspot subnet (uncomment and set accordingly)
+  // IPAddress local_IP(10, 81, 21, 200);
+  // IPAddress gateway(10, 81, 21, 1);
+  // IPAddress subnet(255, 255, 255, 0);
+  // WiFi.config(local_IP, gateway, subnet);
+
+  // WiFi.softAP(ap_ssid, ap_password);
+  // WiFi.setSleep(false);
+
+  // Serial.println("");
+  // Serial.print("WiFi AP started. Connect your Mac to Wi-Fi network: ");
+  // Serial.println(ap_ssid);
+  // Serial.print("Password: ");
+  // Serial.println(ap_password);
+  Serial.print("Connecting to WiFi SSID: ");
+  Serial.println(ext_ssid);
+  WiFi.begin(ext_ssid, ext_pass);
+  // Serial.print("Camera stream available at: http://");
+  // Serial.println(WiFi.softAPIP());
+
+  unsigned long t0 = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
+    delay(250);
+    Serial.print(".");
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("");
+    Serial.print("Connected, camera stream available at: http://");
+    Serial.print(WiFi.localIP());
+    Serial.println("/stream");
+  } else {
+    Serial.println("");
+    Serial.println("Failed to connect to external WiFi, falling back to softAP.");
+    const char* ap_ssid = "UGLL-E-CAM-WIFI";
+    const char* ap_password = "88888888";
+    WiFi.softAP(ap_ssid, ap_password);
+    Serial.print("AP IP: ");
+    Serial.println(WiFi.softAPIP());
+  }
 
   startCameraServer();
 

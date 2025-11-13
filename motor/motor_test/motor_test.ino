@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <esp_sleep.h>
+#include <ArduinoJson.h> 
 
 #define BUTTON_PIN GPIO_NUM_33  
 RTC_DATA_ATTR int lastButtonPressed = 0;
@@ -67,10 +68,13 @@ void moveRotate(int moveTime);
 void testMapping();
 void offAllMotor();
 
+// NEW: staleness window for commands in ms
+const unsigned long CMD_STALE_MS = 800;
+
 // http
 const char* ssid = "Galaxy A53 5G225D";
 const char* password = "sdci3924";
-const char* serverName = "http://10.150.80.246:5002/fetchData";
+const char* serverName = "http://10.150.80.246:5002/fetchData"; // points to the machine running flask_server_to_bot (use the hotspot LAN IP of the host)
 // const char* ssid = "aaaaaaaa";
 // const char* password = "88888888";
 // const char* serverName = "http://10.235.243.246:5000/";
@@ -157,7 +161,7 @@ void loop() {
     if (WiFi.status() == WL_CONNECTED) {
         digitalWrite(WIFI_LED, HIGH);
         HTTPClient http;
-
+        http.setTimeout(1500);
         http.begin(serverName);
         int httpResponseCode = http.GET();
         
@@ -172,27 +176,95 @@ void loop() {
             //     Serial.print("New command: ");
             //     Serial.println(currentCommand);
             // }
-            String command = http.getString();
-            command.trim();
+    //         String command = http.getString();
+    //         command.trim();
 
-            if (command != "" && command != currentCommand) {
-                currentCommand = command;
-                Serial.print("New command: ");
-                Serial.println(currentCommand);
+    //         if (command != "" && command != currentCommand) {
+    //             currentCommand = command;
+    //             Serial.print("New command: ");
+    //             Serial.println(currentCommand);
+    //         }
+    //         lastCommandTime = millis(); // reset timer when command received
+    //     }
+    //     else {
+    //         Serial.print("Error code: ");
+    //         currentCommand = "0";
+    //         Serial.println(httpResponseCode);
+    //     }
+
+    //     http.end();
+    // } else {
+    //     Serial.println("WiFi Disconnected");
+    //     digitalWrite(WIFI_LED, LOW);
+    // }
+
+            String body = http.getString();
+            body.trim();
+
+            // parse JSON safely
+            DynamicJsonDocument doc(1024);
+            DeserializationError err = deserializeJson(doc, body);
+            if (!err) {
+                // get numeric command_num if present
+                int cmdNum = doc.containsKey("command_num") ? doc["command_num"].as<int>() : 0;
+                // get textual command if present
+                const char* cmdTxt = doc.containsKey("command") ? doc["command"].as<const char*>() : nullptr;
+                // read timestamp (seconds float) if present
+                unsigned long cmd_ts_ms = millis();
+                if (doc.containsKey("command_ts")) {
+                    double ts_s = doc["command_ts"].as<double>();
+                    if (ts_s > 1e9) {
+                        // already ms
+                        cmd_ts_ms = (unsigned long)ts_s;
+                    } else {
+                        cmd_ts_ms = (unsigned long)(ts_s * 1000.0);
+                    }
+                } else if (doc.containsKey("timestamp")) {
+                    double ts_s = doc["timestamp"].as<double>();
+                    cmd_ts_ms = (ts_s > 1e9) ? (unsigned long)ts_s : (unsigned long)(ts_s * 1000.0);
+                } else {
+                    cmd_ts_ms = millis(); // fallback to now
+                }
+
+                unsigned long age = (millis() > cmd_ts_ms) ? (millis() - cmd_ts_ms) : 0;
+                if (age <= CMD_STALE_MS) {
+                    // keep behavior: use numeric command code string to drive executeCommand()
+                    if (cmdNum != 0) {
+                        currentCommand = String(cmdNum);
+                    } else if (cmdTxt && strlen(cmdTxt) > 0) {
+                        // fallback mapping if aggregator didn't provide command_num
+                        String s = String(cmdTxt);
+                        s.toUpperCase();
+                        if (s == "STRAIGHT") currentCommand = FORWARD; // OR map as you prefer
+                        else if (s == "LEFT") currentCommand = TURN_LEFT;
+                        else if (s == "RIGHT") currentCommand = TURN_RIGHT;
+                        else if (s == "JUMP") currentCommand = JUMP;
+                        else currentCommand = STOP;
+                    } else {
+                        currentCommand = STOP;
+                    }
+                    lastCommandTime = millis();
+                    Serial.printf("CTRL OK: cmdNum=%d cmdTxt=%s age=%lums\n", cmdNum, cmdTxt?cmdTxt:"<none>", age);
+                } else {
+                    // stale: do not apply old commands
+                    Serial.printf("CTRL STALE age=%lums -> ignore\n", age);
+                }
+            } else {
+                Serial.print("JSON parse error: ");
+                Serial.println(err.c_str());
             }
-            lastCommandTime = millis(); // reset timer when command received
         }
         else {
-            Serial.print("Error code: ");
-            currentCommand = "0";
+            Serial.print("HTTP error code: ");
             Serial.println(httpResponseCode);
+            currentCommand = "0";
         }
-
         http.end();
     } else {
         Serial.println("WiFi Disconnected");
         digitalWrite(WIFI_LED, LOW);
     }
+
     // testMapping();
 
     // Check for deep sleep request
