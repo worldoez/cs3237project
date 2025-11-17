@@ -2,7 +2,7 @@ import argparse, sys
 from pathlib import Path
 import numpy as np, pandas as pd, torch
 
-# make src importable
+# Make src importable
 SRC_DIR = Path(__file__).resolve().parents[1]
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
@@ -30,7 +30,7 @@ def main():
     eff_window = a.window if a.window > 0 else cfg.get("effective_window", cfg.get("window", 150))
     eff_stride = a.stride if a.stride > 0 else cfg.get("effective_stride", cfg.get("stride", 25))
 
-    # load data (file or dir)
+    # Load data (file or dir)
     src = Path(a.input)
     if src.is_dir():
         df, _ = load_raw_dir(str(src))
@@ -56,7 +56,7 @@ def main():
         idx = probs.argmax(axis=1)
         labels = le.inverse_transform(idx)
 
-    # write CSV with probabilities per class (ordered as le.classes_)
+    # Write CSV with probabilities per class (ordered as le.classes_)
     out = Path(a.out)
     prob_cols = [f"prob_{c}" for c in le.classes_]
     rows = []

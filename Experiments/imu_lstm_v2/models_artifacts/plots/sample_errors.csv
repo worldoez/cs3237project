@@ -1,0 +1,7 @@
+y_true,y_pred,confidence
+left,straight,0.95096225
+right,straight,0.504448
+right,straight,0.94528025
+right,straight,0.98308533
+right,straight,0.9743069
+straight,jump,0.994812

@@ -8,8 +8,6 @@ from fastapi import FastAPI, Body
 from fastapi.responses import JSONResponse, HTMLResponse
 from collections import deque
 from datetime import datetime
-# from contextlib import asynccontextmanager
-# import asyncio
 
 # Make "src" importable
 SRC_DIR = Path(__file__).resolve().parents[1]
@@ -26,39 +24,6 @@ from realtime.motion_control import (
 
 
 app = FastAPI()
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Startup: Run after server is ready
-#     async def run_startup_requests():
-#         await asyncio.sleep(3)  # Wait for IMU data to arrive
-
-#         device_id = "imu01"
-
-#         try:
-#             # Calibrate gravity
-#             print("[INFO] Running auto-calibration...")
-#             result = calibrate_gravity(device_id)
-#             print(f"[INFO] Calibrate gravity result: {result}")
-
-#             # await asyncio.sleep(2)
-
-#             # Auto yaw
-#             print("[INFO] Running auto-yaw detection...")
-#             result = auto_yaw(device_id)
-#             print(f"[INFO] Auto yaw result: {result}")
-#         except Exception as e:
-#             print(f"[WARN] Startup requests failed: {e}")
-
-#     # Schedule the background task
-#     asyncio.create_task(run_startup_requests())
-
-#     yield  # Server runs here
-
-#     # Shutdown (cleanup if needed)
-#     pass
-
-
-# app = FastAPI(lifespan=lifespan)
 
 YAW_IDX = {"gx": 0, "gy": 1, "gz": 2}
 
@@ -105,12 +70,9 @@ state = {
     "speed_floor": 0.0,
     "auto_calib": 0,
     "auto_calib_done": {},
-    # anti-flicker for turns
     "turn_guard_ms": 150.0,
     "last_turn": {},
-    # snap-to-straight when both turn probs are low
     "turn_release_thr": 0.36,
-    # quiet tracking + straight margin
     "is_quiet": {},
     "quiet_enter": {},
     "straight_margin": 0.05,
@@ -329,7 +291,6 @@ def _ema_update(device_id: str, probs: np.ndarray) -> np.ndarray:
     alpha = float(state.get("ema_alpha", 0.6))
     prev = state["ema_probs"].get(device_id, None)
     out = probs if prev is None else (alpha * probs + (1.0 - alpha) * prev)
-    # renormalize to ensure sum=1 (prevents tiny confidences)
     s = float(np.sum(out))
     if s > 1e-9:
         out = out / s
@@ -344,7 +305,6 @@ def _debounced_command(
     g = arr_raw[:, :3]
     g_mag = float(np.sqrt((g**2).sum(axis=1)).mean())
 
-    # track continuous quiet period
     is_q_prev = bool(state["is_quiet"].get(device_id, False))
     if g_mag < float(state["quiet_gyro"]):
         if not is_q_prev:
@@ -360,15 +320,12 @@ def _debounced_command(
     th_label = float(th_map.get(label.lower(), th_def))
     margin = float(state.get("straight_margin", 0.05))
 
-    # accept STRAIGHT immediately when confident (no quiet requirement)
     if label.lower() == "straight" and confidence >= th_straight:
         state["current_cmd"][device_id] = "STRAIGHT"
         state["hist"][device_id].clear()
-        # clear last_turn marker
         state.get("last_turn", {}).pop(device_id, None)
         return "STRAIGHT"
 
-    # if quiet for >= quiet_ms, prefer STRAIGHT with small margin
     probs_s = state["probs_s"].get(device_id, None)
     if probs_s is not None:
         classes = list(state["le"].classes_)
@@ -388,7 +345,6 @@ def _debounced_command(
             pL = float(probs_s[li]) if li is not None else 0.0
             pR = float(probs_s[ri]) if ri is not None else 0.0
 
-            # if quiet long enough AND straight is close to (or above) the best
             if quiet_for_ms >= float(state["quiet_ms"]) and (
                 pS >= th_straight or pS + margin >= max(pL, pR)
             ):
@@ -397,7 +353,6 @@ def _debounced_command(
                 state.get("last_turn", {}).pop(device_id, None)
                 return "STRAIGHT"
 
-            # snap to STRAIGHT when both turns are weak and instantaneous quiet
             if (g_mag < float(state["quiet_gyro"])) and (
                 li is not None and ri is not None
             ):
@@ -436,7 +391,6 @@ def _debounced_command(
             )
             return "JUMP"
 
-    # Fast TURN override with anti-flicker guard
     if label.lower() != "straight":
         if confidence >= float(state["turn_fast_thr"]) and g_mag >= float(
             state["turn_min_gyro"]
@@ -444,13 +398,12 @@ def _debounced_command(
             guard_ms = float(state.get("turn_guard_ms", 150.0))
             last = state.get("last_turn", {}).get(device_id, {"dir": None, "ts": 0.0})
             opp = "LEFT" if label.upper() == "RIGHT" else "RIGHT"
-            # block immediate switch to opposite side within guard window
             if (
                 last
                 and last.get("dir") == opp
                 and (now_ts - float(last.get("ts", 0.0))) * 1000.0 < guard_ms
             ):
-                pass  # block opposite flicker briefly
+                pass 
             else:
                 state["current_cmd"][device_id] = label.upper()
                 state["hist"][device_id].clear()
@@ -498,7 +451,7 @@ def _append_log_row(
         "command": command,
         "confidence": confidence,
     }
-    # log prob_sum to verify normalization
+
     row["prob_sum"] = float(sum(probs.values()))
     for c in state["le"].classes_:
         row[f"prob_{c}"] = float(probs.get(c, 0.0))
@@ -572,7 +525,7 @@ def ingest(payload: Dict[str, Any] = Body(...)):
             state["recent"][device_id].append(latest_sample)
             win.push(parts)
 
-            # one-time auto calibration (optional)
+            # One-time auto calibration
             if (
                 state.get("auto_calib", 0)
                 and not state["auto_calib_done"].get(device_id, False)
@@ -607,10 +560,8 @@ def ingest(payload: Dict[str, Any] = Body(...)):
                 else probs_g
             )
 
-            # 3) Temporal smoothing of probabilities (EMA)
             probs_s = _ema_update(device_id, probs_p)
 
-            # NEW: safety renorm (should be redundant, but harmless)
             ps = float(np.sum(probs_s))
             if ps > 1e-9:
                 probs_s = probs_s / ps
@@ -1043,10 +994,10 @@ if __name__ == "__main__":
     ap.add_argument("--acc_bias_alpha", type=float, default=0.01)
     ap.add_argument("--speed_floor", type=float, default=0.0)
     ap.add_argument("--auto_calib", type=int, default=0)
-    ap.add_argument("--turn_guard_ms", type=int, default=220)  # default stronger guard
+    ap.add_argument("--turn_guard_ms", type=int, default=220) 
     ap.add_argument(
         "--turn_release_thr", type=float, default=0.36
-    )  # release to straight when both L/R < this
+    ) 
     ap.add_argument("--straight_margin", type=float, default=0.05)
     args = ap.parse_args()
 

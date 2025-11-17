@@ -45,14 +45,42 @@ def main():
     model.load_state_dict(torch.load(art / "lstm_v2_best.pth", map_location=device))
     model.eval()
 
-    correct, total = 0, 0
+    # Collect probabilities + predicted labels for whole test set
+    probs_list = []
+    preds_list = []
     with torch.no_grad():
         for xb, yb in dl:
-            xb, yb = xb.to(device), yb.to(device)
-            pred = model(xb).argmax(1)
-            correct += int((pred == yb).sum().item())
-            total += xb.size(0)
+            xb = xb.to(device)
+            logits = model(xb)
+            probs = torch.softmax(logits, dim=1).cpu().numpy()
+            preds = np.argmax(probs, axis=1)
+            probs_list.append(probs)
+            preds_list.append(preds)
+
+    probs_all = np.vstack(probs_list)
+    preds_all = np.concatenate(preds_list, axis=0)
+
+    # Accuracy
+    correct = int((preds_all == y).sum())
+    total = len(y)
     print(f"Accuracy: {correct/max(total,1):.4f} (window={eff_window}, stride={eff_stride})")
+
+    # Build dataframe with per-class prob columns and confidence
+    import pandas as pd
+    classes = list(le.classes_)
+    df_out = pd.DataFrame({
+        "y_true": le.inverse_transform(y),
+        "y_pred": le.inverse_transform(preds_all),
+        "confidence": probs_all.max(axis=1)
+    })
+    # Add per-class prob columns named prob_<label>
+    for i, cls in enumerate(classes):
+        col = f"prob_{str(cls).lower()}"
+        df_out[col] = probs_all[:, i]
+
+    # Save predictions.csv (overwrite) so plotting uses consistent offline preds
+    df_out.to_csv(art / "predictions.csv", index=False)
+    print("Saved predictions with confidence & probs to", art / "predictions.csv")
 
 if __name__ == "__main__":
     main()

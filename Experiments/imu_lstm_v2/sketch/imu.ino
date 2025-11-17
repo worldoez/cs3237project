@@ -1,10 +1,3 @@
-/*
-ESP32 + Adafruit MPU6050
-Posts batched JSON samples to FastAPI endpoint /ingest at ~50 Hz sampling, 10-sample batches.
-JSON schema:
-{ "device_id":"imu01", "samples":[ {"ts":..., "gx":..,"gy":..,"gz":..,"ax":..,"ay":..,"az":..}, ... ] }
-*/
-
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <Adafruit_MPU6050.h>
@@ -12,10 +5,9 @@ JSON schema:
 
 Adafruit_MPU6050 mpu;
 
-// WIFI CONFIG: set your WiFi and server
-const char* WIFI_SSID = "";
-const char* WIFI_PASS = "";
-const char* SERVER_URL = "http://<laptop_ip>:5000/ingest"; // replace with your PC IP
+const char* WIFI_SSID = "UGLL-E-CAM-WIFI";
+const char* WIFI_PASS = "88888888";
+const char* SERVER_URL = "http://192.168.4.2:5000/ingest"; // replace with your PC IP
 const char* DEVICE_ID  = "imu01";
 
 const uint32_t SAMPLE_DELAY_MS = 20; // ~50 Hz

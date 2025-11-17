@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-# local yaw index map (match http_ingest_server)
+# Local yaw index map (match http_ingest_server)
 YAW_IDX = {"gx": 0, "gy": 1, "gz": 2}
 RAD2DEG = 180.0 / math.pi
 
@@ -80,10 +80,10 @@ def update_control(state: dict, device_id: str, arr_raw: np.ndarray, latest_samp
     # Reset angle when entering STRAIGHT or JUMP
     cmd_upper = (command or "").upper()
     if cmd_upper not in ("LEFT", "RIGHT"):
-        # decay angle toward 0 slowly to avoid stale value
+        # Decay angle toward 0 slowly to avoid stale value
         ctl["angle_deg"] = 0.0
     else:
-        # signed integration (yaw_sign already applied; sign of LEFT/RIGHT is in yaw rate)
+        # Signed integration (yaw_sign already applied; sign of LEFT/RIGHT is in yaw rate)
         ctl["angle_deg"] += yaw_rate_lp_dps * dt_s
 
     # Differential mixing for a simple driver (normalized -1..1)
