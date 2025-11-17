@@ -9,4 +9,4 @@ tqdm
 pyyaml
 uvicorn
 fastapi
-nest-asyncio
+seaborn

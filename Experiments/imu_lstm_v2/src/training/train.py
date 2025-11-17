@@ -108,6 +108,12 @@ def main():
     criterion = nn.CrossEntropyLoss(weight=weights)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
 
+    # History containers
+    train_losses = []
+    val_losses = []
+    train_accs = []
+    val_accs = []
+
     best_val_acc, best_path = -1.0, out_dir / "lstm_v2_best.pth"
     for epoch in range(1, args.epochs+1):
         model.train()
@@ -123,12 +129,24 @@ def main():
             loss_sum += float(loss) * xb.size(0)
             n_sum += xb.size(0)
             pbar.set_postfix(loss=loss_sum/n_sum)
-        # Val
+
+        # Compute train loss/acc
+        train_loss = (loss_sum / n_sum) if n_sum > 0 else 0.0
+        train_acc = evaluate_loop(model, dl_train, device)
+        train_losses.append(train_loss)
+        train_accs.append(train_acc)
+
+        # Compute val loss
         val_acc = evaluate_loop(model, dl_val, device)
+        val_loss = evaluate_loss(model, dl_val, device, criterion)
+        val_losses.append(val_loss)
+        val_accs.append(val_acc)
+
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), best_path)
-        print(f"Val acc: {val_acc:.4f} (best {best_val_acc:.4f})")
+        print(f"Val acc: {val_acc:.4f} (best {best_val_acc:.4f})  train_loss={train_loss:.4f} val_loss={val_loss:.4f} train_acc={train_acc:.4f}")
+
 
     # Test with best
     model.load_state_dict(torch.load(best_path, map_location=device))
@@ -150,6 +168,16 @@ def main():
         "best_val_acc": best_val_acc
     }, out_dir / "config.json")
     pd.DataFrame({"y_true": le.inverse_transform(y_test), "y_pred": le.inverse_transform(y_pred)}).to_csv(out_dir / "predictions.csv", index=False)
+
+    history = {
+        "train_loss": train_losses,
+        "val_loss": val_losses,
+        "train_acc": train_accs,
+        "val_acc": val_accs
+    }
+    with open(out_dir / "history.json", "w") as fh:
+        json.dump(history, fh)
+
     print("Done. Artifacts saved to", out_dir)
 
 def evaluate_loop(model, dl, device):
@@ -163,6 +191,18 @@ def evaluate_loop(model, dl, device):
             correct += int((pred == yb).sum().item())
             total += xb.size(0)
     return correct / max(total, 1)
+
+def evaluate_loss(model, dl, device, criterion):
+    model.eval()
+    loss_sum, n = 0.0, 0
+    with torch.no_grad():
+        for xb, yb in dl:
+            xb, yb = xb.to(device), yb.to(device)
+            logits = model(xb)
+            loss = criterion(logits, yb)
+            loss_sum += float(loss) * xb.size(0)
+            n += xb.size(0)
+    return loss_sum / max(n, 1)
 
 def infer_all(model, dl, device):
     model.eval()
