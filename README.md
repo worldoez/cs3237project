@@ -9,17 +9,17 @@ The final creation is composed of 3 main parts
 - The backpack user wears with an IMU (Known as EVE)
 - The April Tag belt users wears on the waist (Known as M-O, tracked by UGLL-E Eye)
 
-"ugll-e_body_thing" contains the ESP32 sketch that mainly controls the motors. "SERVER-ugll-e_body_thing" contains the server that specifies the controls that the motors should make. "SERVER-ugll-e_body_thing" is the main server, it receives data from other two servers to determine the required control.
+<ugll-e_body_thing> contains the ESP32 sketch that mainly controls the motors. <SERVER-ugll-e_body_thing> contains the server that specifies the controls that the motors should make. <SERVER-ugll-e_body_thing> is the main server, it receives data from other two servers to determine the required control.
 
-"ugll-e_nose_thing" contains the ESP32 sketch that handles obstacle avoidance. It interacts with "ugll-e_body_thing" so that the robot knows to stop when an obstacle is detected.
+<ugll-e_nose_thing> contains the ESP32 sketch that handles obstacle avoidance. It interacts with <ugll-e_body_thing> so that the robot knows to stop when an obstacle is detected.
 
-"ugll-e_eye_thing" contains the ESP32 sketch that allows for April Tag detection. "SERVER-ugll-e_eye_thing" contains two files that receive and analyze data from it so that the prediction can be used by "SERVER-ugll-e_body_thing".
+<ugll-e_eye_thing> contains the ESP32 sketch that allows for April Tag detection. <SERVER-ugll-e_eye_thing> contains two files that receive and analyze data from it so that the prediction can be used by <SERVER-ugll-e_body_thing>.
 
-"eve_thing" contains the ESP32 sketch that tracks and sends IMU data. "SERVER-eve_thing" contains the server that would process the data so the prediction can be used by "SERVER-ugll-e_body_thing".
+<eve_thing> contains the ESP32 sketch that tracks and sends IMU data. <SERVER-eve_thing> contains the server that would process the data so the prediction can be used by <SERVER-ugll-e_body_thing>.
 
-Do see the START-SERVER-*.txt files on how to start the servers. The only complex one is starting the SERVER-eve_thing.
+Do see the <START-SERVER-*.txt> files on how to start the servers. The only complex one is starting the <SERVER-eve_thing>.
 
-Note that wireless and server information may need to be updated in relevant files. The ipmlmentation requires all servers and ESP32s to connect to the ESP32Cam's WiFi. Moreover, file paths in files may need to be updated.
+Note that wireless and server information may need to be updated in relevant files. The implementation requires all servers and ESP32s to connect to the ESP32Cam's WiFi. Moreover, file paths in files may need to be updated.
 
 The EXPERIMENTS folder contains the raw files created as we slowly brought UGLL-E to life! Some files may have been assisted thanks to the help of GenAI. These files are experiments and should not be relevant to the final submission of the project.
 
