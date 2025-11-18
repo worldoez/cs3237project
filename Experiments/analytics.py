@@ -84,7 +84,6 @@ class RobotCommandAnalytics:
             self.return_connection(conn)
 
     def get_april_tag_usage(self, table_name: str = "imu_cam_data") -> Dict[str, int]:
-        """Get count of imu_cam_data with and without April tags."""
         conn = self.get_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -142,7 +141,7 @@ class RobotCommandAnalytics:
         report.append("\n COMMAND DISTRIBUTION:")
         cmd_dist = self.get_command_distribution(table_name)
         for cmd, count in cmd_dist.items():
-            report.append(f"  {cmd}: {count} imu_cam_data")
+            report.append(f"  {cmd}: {count}")
 
         # Turn statistics
         report.append("\n TURN ANGLE STATISTICS:")
@@ -156,7 +155,7 @@ class RobotCommandAnalytics:
         dist_stats = self.get_distance_statistics(table_name)
         for key, value in dist_stats.items():
             if value is not None:
-                report.append(f"  {key}: {value:.3f} units")
+                report.append(f"  {key}: {value:.3f} cm")
 
         # April tag usage
         report.append("\n APRIL TAG USAGE:")
