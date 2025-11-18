@@ -2,7 +2,7 @@
 
 Group Members: Stanley Wijaya, Ella Yovita Suwibowo, Hu Chong Xern, Evan Zhao, Daphne Shaine Wilhelmina
 
-## Code files for Final Creation
+## Code Files for Final Creation
 
 The final creation is composed of 3 main parts
 - The main autonomous carrying basket (Known as UGLL-E seperated as UGLL-E Body, UGLL-E Eye, UGLL-E Nose)
@@ -23,7 +23,7 @@ Note that wireless and server information may need to be updated in relevant fil
 
 The EXPERIMENTS folder contains the raw files created as we slowly brought UGLL-E to life! Some files may have been assisted thanks to the help of GenAI. These files are experiments and should not be relevant to the final submission of the project.
 
-## Demo files for Final Creation
+## Demo Files for Final Creation
 
 See the ./DEMO folder.
 
