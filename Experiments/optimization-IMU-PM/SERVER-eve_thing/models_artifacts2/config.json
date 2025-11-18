@@ -1,0 +1,41 @@
+{
+  "config": {
+    "raw_dir": "C:\\Users\\ezhao\\Downloads\\cs3237project\\POLISHERY\\SERVER-eve_thing\\imu_data3",
+    "out_dir": "C:\\Users\\ezhao\\Downloads\\cs3237project\\POLISHERY\\SERVER-eve_thing\\models_artifacts2",
+    "window": 150,
+    "stride": 25,
+    "batch": 128,
+    "epochs": 22,
+    "lr": 0.001,
+    "hidden": 64,
+    "layers": 2,
+    "dropout": 0.2,
+    "bidirectional": false,
+    "val_size": 0.15,
+    "test_size": 0.15,
+    "seed": 42,
+    "effective_window": 150,
+    "effective_stride": 25
+  },
+  "stats": {
+    "accel_x": {
+      "jump": -1.6475827453183522,
+      "left": -1.5724014222222222,
+      "right": 0.9338103111111111,
+      "straight": -2.776149544513457
+    },
+    "accel_y": {
+      "jump": 8.862188632958802,
+      "left": 8.53240276,
+      "right": 9.138698368888889,
+      "straight": 8.9325649689441
+    },
+    "accel_z": {
+      "jump": -3.204060374531835,
+      "left": -4.538510586666667,
+      "right": -3.2377426533333336,
+      "straight": -2.0892042236024846
+    }
+  },
+  "best_val_acc": 0.9982517482517482
+}
