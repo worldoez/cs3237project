@@ -1,9 +1,8 @@
 import psycopg2
 import psycopg2.pool
 from psycopg2.extras import RealDictCursor
-import pandas as pd
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict
 
 
 class RobotCommandAnalytics:
@@ -15,15 +14,6 @@ class RobotCommandAnalytics:
 
     def return_connection(self, conn):
         self.db_pool.putconn(conn)
-
-    def fetch_all_data(self, table_name: str = "imu_cam_data") -> pd.DataFrame:
-        conn = self.get_connection()
-        try:
-            query = f"SELECT * FROM {table_name} ORDER BY timestamp"
-            df = pd.read_sql_query(query, conn)
-            return df
-        finally:
-            self.return_connection(conn)
 
     def get_command_distribution(
         self, table_name: str = "imu_cam_data"
@@ -43,7 +33,6 @@ class RobotCommandAnalytics:
             self.return_connection(conn)
 
     def get_turn_statistics(self, table_name: str = "imu_cam_data") -> Dict[str, float]:
-        """Calculate statistics for turn angles."""
         conn = self.get_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -64,7 +53,6 @@ class RobotCommandAnalytics:
     def get_distance_statistics(
         self, table_name: str = "imu_cam_data"
     ) -> Dict[str, float]:
-        """Calculate statistics for distances."""
         conn = self.get_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -131,39 +119,33 @@ class RobotCommandAnalytics:
             self.return_connection(conn)
 
     def generate_full_report(self, table_name: str = "imu_cam_data") -> str:
-        """Generate a comprehensive analytics report."""
         report = []
         report.append("=" * 60)
         report.append("ROBOT COMMAND ANALYTICS REPORT")
         report.append("=" * 60)
 
-        # Command distribution
         report.append("\n COMMAND DISTRIBUTION:")
         cmd_dist = self.get_command_distribution(table_name)
         for cmd, count in cmd_dist.items():
             report.append(f"  {cmd}: {count}")
 
-        # Turn statistics
         report.append("\n TURN ANGLE STATISTICS:")
         turn_stats = self.get_turn_statistics(table_name)
         for key, value in turn_stats.items():
             if value is not None:
                 report.append(f"  {key}: {value:.2f}°")
 
-        # Distance statistics
         report.append("\n DISTANCE STATISTICS:")
         dist_stats = self.get_distance_statistics(table_name)
         for key, value in dist_stats.items():
             if value is not None:
                 report.append(f"  {key}: {value:.3f} cm")
 
-        # April tag usage
         report.append("\n APRIL TAG USAGE:")
         april_usage = self.get_april_tag_usage(table_name)
         for key, count in april_usage.items():
             report.append(f"  {key}: {count} imu_cam_data")
 
-        # Time range
         report.append("\n TIME RANGE:")
         time_range = self.get_time_range(table_name)
         for key, value in time_range.items():
