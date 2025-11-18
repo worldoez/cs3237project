@@ -1,0 +1,9 @@
+numpy
+pandas
+scikit-learn
+joblib
+matplotlib
+pyserial
+torch>=2.0.0
+tqdm
+pyyaml

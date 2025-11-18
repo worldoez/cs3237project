@@ -1,0 +1,2 @@
+python3 ./SERVER-ugll-e_eye_thing/flask_server_distance.py & 
+python3 ./SERVER-ugll-e_eye_thing/frame_analysis.py
