@@ -21,7 +21,7 @@ Do see the <START-SERVER-*.txt> files on how to start the servers. The only comp
 
 Note that wireless and server information may need to be updated in relevant files. The implementation requires all servers and ESP32s to connect to the ESP32Cam's WiFi. Moreover, file paths in files may need to be updated.
 
-The EXPERIMENTS folder contains the raw files created as we slowly brought UGLL-E to life! Some files may have been assisted thanks to the help of GenAI. These files are experiments and should not be relevant to the final submission of the project.
+The EXPERIMENTS folder contains the raw files created as we slowly brought UGLL-E to life! Some files may have been assisted thanks to the help of GenAI. These files are experiments and is not relevant to the final creation.
 
 ## Demo Files for Final Creation
 
