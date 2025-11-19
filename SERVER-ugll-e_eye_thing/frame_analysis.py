@@ -21,7 +21,7 @@ def preprocess_image(img):
     return img_input  # (1, 64, 64, 1)
 
 
-def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=0.5):
+def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras"):
     OG_W, OG_H = 240, 240
     # url = "http://192.168.4.1:81/stream"
     url = "http://192.168.4.1:81/stream"  # replace <CAMERA_IP> with WiFi.localIP() shown on camera serial
@@ -48,59 +48,53 @@ def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=
                     np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_GRAYSCALE
                 )
 
-                curr_time = time.time()
-                if curr_time - last_capture_time >= interval_time:
-                    last_capture_time = curr_time
+                # curr_time = time.time()
+                # if curr_time - last_capture_time >= interval_time:
+                #     last_capture_time = curr_time
 
-                    if img is not None:
-                        cv2.imshow("ESP32 Stream", img)
+                if img is not None:
+                    cv2.imshow('ESP32 Stream', img)
 
-                        img_input = preprocess_image(img)
-                        computed_center = [-1, -1]
+                    img_input = preprocess_image(img)
+                    computed_center = [-1, -1]
+                    
+                    if not is_apriltag_present(img_input):
+                        #print("No apriltags here")
+                        forward_distance = -1.0
+                        is_tag_present = False
+                    else:
+                        corner_pred = compute_corners_from_img(img_input)
+                        computed_center = compute_center_from_corners(corner_pred)
+                        #corner_pred = corners_model.predict(img_input, verbose=0)[0]
+                        pred_corners_px = corner_pred.copy()
+                        pred_corners_px[0::2] *= OG_W
+                        pred_corners_px[1::2] *= OG_H
+                        corners = pred_corners_px.reshape(4, 2)
+                        print("corners:", corners)
 
-                        if not is_apriltag_present(img_input):
-                            print("No apriltags here")
-                            forward_distance = -1.0
-                            is_tag_present = False
-                        else:
-                            corner_pred = compute_corners_from_img(img_input)
-                            computed_center = compute_center_from_corners(corner_pred)
-                            # corner_pred = corners_model.predict(img_input, verbose=0)[0]
-                            pred_corners_px = corner_pred.copy()
-                            pred_corners_px[0::2] *= OG_W
-                            pred_corners_px[1::2] *= OG_H
-                            corners = pred_corners_px.reshape(4, 2)
-                            print("corners:", corners)
+                        forward_distance = calc_dist(corners)
+                        print(f"[INFO] Distance: {forward_distance:.3f}")
+                        is_tag_present = True
 
-                            forward_distance = calc_dist(corners)
-                            print(f"[INFO] Distance: {forward_distance:.3f}")
-                            is_tag_present = True
+                    payload = {
+                        "device_id": "cam01",
+                        "distance": float(forward_distance),
+                        "is_apriltag_present": is_tag_present,
+                        "apriltag_center": computed_center.tolist() if isinstance(computed_center, np.ndarray) else computed_center,
+                        "timestamp": time.time(),
+                    }
 
-                        payload = {
-                            "device_id": "cam01",
-                            "distance": float(forward_distance),
-                            "is_apriltag_present": is_tag_present,
-                            "apriltag_center": computed_center.tolist()
-                            if isinstance(computed_center, np.ndarray)
-                            else computed_center,
-                            "timestamp": time.time(),
-                        }
+                    try:
+                        resp = requests.post("http://localhost:5001/distance", json=payload)
+                        if not resp.ok:
+                            #print("Sent distance of", forward_distance)
+                        #else:
+                            print("Failed to send:", resp.status_code, resp.text)
+                    except Exception as e:
+                        print("[ERROR] Sending distance:", e)
 
-                        try:
-                            resp = requests.post(
-                                "http://localhost:5001/distance",
-                                json=payload,
-                                timeout=interval_time,
-                            )
-                            if resp.ok:
-                                print("Sent distance of", forward_distance)
-                            else:
-                                print("Failed to send:", resp.status_code, resp.text)
-                        except Exception as e:
-                            print("[ERROR] Sending distance:", e)
-
-                    if cv2.waitKey(1) == 27:
-                        break
+                if cv2.waitKey(1) == 27:
+                    break
 
     except KeyboardInterrupt:
         print("Stopped manually")
@@ -111,4 +105,4 @@ def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=
 
 
 if __name__ == "__main__":
-    run_cnn_model(interval_time=0.1)
+    run_cnn_model()

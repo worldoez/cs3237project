@@ -9,3 +9,4 @@ __pycache__/
 /Experiments/distance/__pycache__
 Experiments/distance/__pycache__/estimate_dist.cpython-311.pyc
 /Experiments/distance/__pycache__
+*.zip

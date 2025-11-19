@@ -4,18 +4,16 @@ from PIL import Image
 import cv2
 import matplotlib.pyplot as plt
 
-
 def initialise_detector():
     return Detector(
         families="tag36h11",
         nthreads=1,
-        quad_decimate=0.5, # less downscaling gives more detail (default is 2.0)
-        quad_sigma=0.0, # smooth noise so quads form more easily
+        quad_decimate=0.8,  # less downscaling gives more detail (default is 2.0)
+        quad_sigma=0.2,  # smooth noise so quads form more easily
         refine_edges=1,
         decode_sharpening=0.25,
         debug=0,
     )
-
 
 def is_apriltag_present(img_array):
     img_array = (img_array * 255).astype(np.uint8)
@@ -36,7 +34,6 @@ def compute_centre_from_img(img_array):
 
     return detection.center
 
-
 def compute_corners_from_img(img_array):
     img_array = (img_array * 255).astype(np.uint8)
     img_array = img_array[0, :, :, 0]
@@ -53,11 +50,10 @@ def compute_corners_from_img(img_array):
 
     return np.array(all_corners)
 
-
 def detect_apriltag_from_array(img_array, detector, is_plot=True):
     img_array = cv2.cvtColor(
         img_array, cv2.COLOR_RGBA2GRAY
-    )  # change rgba to black and white channels
+    )  # change rgba to black and white channels if any
     # print("Img array shape:", img_array.shape)
 
     detection = detector.detect(img_array)
@@ -96,7 +92,6 @@ def detect_apriltag_from_array(img_array, detector, is_plot=True):
 
     return detection
 
-
 def detect_apriltag_from_image(img_filepath, detector, is_plot=True):
     image = Image.open(img_filepath)
     if is_plot:
@@ -105,34 +100,22 @@ def detect_apriltag_from_image(img_filepath, detector, is_plot=True):
     detection = detect_apriltag_from_array(img_array, detector, is_plot=is_plot)
     return detection
 
-
 def plot_predicted_corners(img_array, corners, label="Predicted"):
-    """
-    Plots an image with the given predicted corners.
-
-    Parameters:
-    - img_array: 2D (grayscale) or 3D (RGB) numpy array of the image
-    - corners: array-like of shape (8,), representing 4 corners as [x0,y0,x1,y1,x2,y2,x3,y3]
-    - label: optional text label to mark on the center of the corners
-    """
     plt.figure()
-    # Show the image
+    
     if img_array.ndim == 2:
         plt.imshow(img_array, cmap="gray")
     else:
         plt.imshow(img_array)
 
-    # Extract corner coordinates
     x_coords = corners[0::2]
     y_coords = corners[1::2]
 
-    # Draw the quadrilateral
     for j in range(4):
         curr_x = [x_coords[j], x_coords[(j + 1) % 4]]
         curr_y = [y_coords[j], y_coords[(j + 1) % 4]]
         plt.plot(curr_x, curr_y, c="red", linewidth=2)
 
-    # Draw center and label
     center_x = np.mean(x_coords)
     center_y = np.mean(y_coords)
     plt.scatter(center_x, center_y, c="yellow", s=40)
@@ -145,6 +128,6 @@ def plot_predicted_corners(img_array, corners, label="Predicted"):
 
 if __name__ == "__main__":
     detector = initialise_detector()
-    filepath = "captured_frames/frame_279.jpg"
+    filepath = "captured_frames/frame_5629.jpg"
     detection = detect_apriltag_from_image(filepath, detector)
     # print(detection)

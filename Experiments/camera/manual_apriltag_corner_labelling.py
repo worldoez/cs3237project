@@ -5,9 +5,7 @@ import os
 import time
 
 CSV_PATH = "apriltag_train_data.csv"
-SAVE_EVERY = 1  # save progress after every one labelled images
-MAX_SCREEN_WIDTH = 3840
-MAX_SCREEN_HEIGHT = 2160
+SAVE_EVERY = 1
 
 clicked_points = []
 current_image_path = None
@@ -16,8 +14,7 @@ df = None
 next_image_flag = False
 scale_factor = 1.0  # used to map scaled clicks back to og coords
 
-def resize_to_screen(img, max_width=MAX_SCREEN_WIDTH, max_height=MAX_SCREEN_HEIGHT):
-    """Resize image to fit screen while keeping aspect ratio."""
+def resize_to_screen(img, max_width=3840, max_height=2160):
     h, w = img.shape[:2]
     scale = min(max_width / w, max_height / h)
     new_w, new_h = int(w * scale), int(h * scale)
@@ -33,7 +30,6 @@ def redraw_points(img, points):
     for i in range(1, len(points)):
         cv2.line(img_display, points[i - 1], points[i], (0, 255, 0), 2)
     return img_display
-
 
 def click_event(event, x, y, flags, param):
     global clicked_points, current_image_path, current_index, df, next_image_flag, scale_factor
@@ -57,13 +53,12 @@ def click_event(event, x, y, flags, param):
             cv2.destroyAllWindows()
 
 def save_progress():
-    df.to_csv(CSV_PATH, index=False)
-    print(f"saved to {CSV_PATH}")
+    df.to_csv("apriltag_train_data.csv", index=False)
 
 def main(start_row=None, end_row=None):
     global clicked_points, current_image_path, current_index, df, next_image_flag, scale_factor
     newly_labelled = []
-    df = pd.read_csv(CSV_PATH)
+    df = pd.read_csv("apriltag_train_data.csv")
 
     start_idx = start_row if start_row is not None else 0
     end_idx = end_row if end_row is not None else len(df)
@@ -114,7 +109,7 @@ def main(start_row=None, end_row=None):
                     cv2.imshow(window_name, img_display)
 
             elif key == ord('c'):
-                print("No april tag here.")
+                print("No april tag here")
                 df.at[idx, "has_apriltag"] = False
                 df.at[idx, "corners"] = ""
                 cv2.destroyAllWindows()
@@ -132,7 +127,7 @@ def main(start_row=None, end_row=None):
             save_progress()
 
     save_progress()
-    print(f"Newly labelled True images: {newly_labelled}")
+    print("Newly labelled True images:", newly_labelled)
     return newly_labelled
 
 if __name__ == "__main__":
@@ -141,6 +136,7 @@ if __name__ == "__main__":
         last_val = int(line.strip())
     print("last val:", last_val)
     newly_labelled = main(start_row=last_val)
+    
     with open("Experiments/apriltag_detection/last_val.txt", 'w') as file:
         if len(newly_labelled) > 0:
             file.write(newly_labelled[-1].split('_')[2].split('.')[0])

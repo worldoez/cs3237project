@@ -9,8 +9,8 @@ def initialise_detector():
     return Detector(
         families="tag36h11",
         nthreads=1,
-        quad_decimate=0.5, # less downscaling gives more detail (default is 2.0)
-        quad_sigma=0.0, # smooth noise so quads form more easily
+        quad_decimate=0.8,  # less downscaling gives more detail (default is 2.0)
+        quad_sigma=0.2,  # smooth noise so quads form more easily
         refine_edges=1,
         decode_sharpening=0.25,
         debug=0,
@@ -145,6 +145,6 @@ def plot_predicted_corners(img_array, corners, label="Predicted"):
 
 if __name__ == "__main__":
     detector = initialise_detector()
-    filepath = "captured_frames/frame_279.jpg"
+    filepath = "captured_frames/frame_5629.jpg"
     detection = detect_apriltag_from_image(filepath, detector)
     # print(detection)

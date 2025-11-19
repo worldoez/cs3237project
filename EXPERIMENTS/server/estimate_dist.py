@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 
-
 # Example inputs (replace with real values)
 # [[111.62237549 112.32441711]
 #  [194.61705017 121.10914612]

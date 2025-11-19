@@ -5,19 +5,15 @@ import pandas as pd
 import albumentations as A
 import os
 
-# === SETTINGS ===
 AUGMENTED_OUTPUT_CSV = "augmented_apriltag_train_data.csv"
 AUGMENTED_OUTPUT_DIR = "captured_frames"
-NUM_AUGS_PER_IMAGE = 4
 
-# ---- Helper: read color image ----
 def read_image_for_augmentation(img_path):
-    img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise FileNotFoundError(f"Cannot read {img_path}")
-    return img  # shape (H, W, 3)
+    return img 
 
-# ---- Define augmentation pipelines ----
 augment_with_corners = A.Compose([
     A.RandomBrightnessContrast(p=0.5),
     A.Affine(
@@ -38,8 +34,7 @@ augment_no_corners = A.Compose([
     A.ISONoise(p=0.15)
 ], p=1.0)
 
-# ---- Augment and save ----
-def augment_and_save_images(df_ranged, output_dir=AUGMENTED_OUTPUT_DIR, num_augs=NUM_AUGS_PER_IMAGE):
+def augment_and_save_images(df_ranged, output_dir=AUGMENTED_OUTPUT_DIR, num_augs=4):
     os.makedirs(output_dir, exist_ok=True)
     new_rows = []
     counter = 0
@@ -100,13 +95,11 @@ def augment_and_save_images(df_ranged, output_dir=AUGMENTED_OUTPUT_DIR, num_augs
 
                 print(f"Saved: {save_path} (no AprilTag)")
 
-    # Save results to CSV
     augmented_df = pd.DataFrame(new_rows)
-    augmented_df.to_csv(AUGMENTED_OUTPUT_CSV, index=False)
-    print(f"Saved {len(new_rows)} augmented color images and metadata to {AUGMENTED_OUTPUT_CSV}")
+    augmented_df.to_csv("augmented_apriltag_train_data.csv", index=False)
+    print(f"Saved {len(new_rows)} augmented images and metadata to augmented output csv")
     return augmented_df
 
-# ---- Optional visualization ----
 def show_augmented_example(img, corners):
     augmented = augment_with_corners(image=img, keypoints=corners.reshape(-1, 2))
     aug_img = augmented["image"]
