@@ -56,7 +56,6 @@ def calc_dist(corners):
 
     return forward_distance * 10000  # return in cm
 
-
 def compute_center_from_corners(corners_arr):
     sum_coords = np.sum(corners_arr, axis=0)
     return sum_coords / 4.0

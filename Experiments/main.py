@@ -25,7 +25,7 @@ if __name__ == "__main__":
         print("has apriltag:", has_apriltag)
         corners = detection[0].corners.flatten()
         print("corners:", corners.flatten())
-        calc_dist(detection[0].corners)
+        print(calc_dist(detection[0].corners))
     else:
         image_folder_path = "captured_frames"
         data = generate_training_data(detector, image_folder_path)
