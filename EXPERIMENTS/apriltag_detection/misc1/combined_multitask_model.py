@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.losses import Huber
 import tensorflow as tf
 
-OG_H, OG_W = 240, 320
+OG_H, OG_W = 240, 240
 IMG_H, IMG_W = 64, 64
 df = pd.read_csv('apriltag_train_data.csv') 
 images, cls_labels, corners_all = [], [], []
@@ -72,13 +72,13 @@ history = model.fit(
     validation_split=0.1
 )
 
-eval_results = model.evaluate(X_test, {'class_output': y_cls_test, 'corner_output': y_reg_test})
+eval_results = model.evaluate(
+    X_test, {'class_output': y_cls_test, 'corner_output': y_reg_test}
+)
 print("Evaluation:", eval_results)
 
-# ==== INSPECT SPECIFIC IMAGE PREDICTIONS ====
+# inspect samples at random 
 def inspect_predictions(model, df, X, y_cls, y_reg, OG_W, OG_H, n=5):
-    """Show N random test images with predicted corners overlayed."""
-    print(f"\nInspecting {n} random samples...")
     for idx in np.random.choice(len(X), n, replace=False):
         img = X[idx]
         true_cls = y_cls[idx]
@@ -88,41 +88,32 @@ def inspect_predictions(model, df, X, y_cls, y_reg, OG_W, OG_H, n=5):
         pred_prob = float(pred_cls.flatten()[0])
         pred_corners = pred_corners.flatten()
 
-        # Denormalize
-        pred_corners_px = pred_corners.copy()
-        pred_corners_px[0::2] *= OG_W
-        pred_corners_px[1::2] *= OG_H
+        pred_px = pred_corners.copy()
+        pred_px[0::2] *= OG_W
+        pred_px[1::2] *= OG_H
 
-        true_corners_px = true_corners.copy()
-        true_corners_px[0::2] *= OG_W
-        true_corners_px[1::2] *= OG_H
+        true_px = true_corners.copy()
+        true_px[0::2] *= OG_W
+        true_px[1::2] *= OG_H
 
-        # Compute pixel MAE
-        mae_px = np.mean(np.abs(pred_corners_px - true_corners_px))
+        mae_px = np.mean(np.abs(pred_px - true_px))
         print(f"Image {idx}: cls={true_cls}, pred_prob={pred_prob:.3f}, MAE_px={mae_px:.2f}")
 
-        # Draw predicted vs true corners
         img_vis = cv2.resize((img.squeeze()*255).astype(np.uint8), (OG_W, OG_H))
         img_vis = cv2.cvtColor(img_vis, cv2.COLOR_GRAY2BGR)
 
-        pts_pred = pred_corners_px.reshape(-1, 2).astype(int)
-        pts_true = true_corners_px.reshape(-1, 2).astype(int)
-
-        cv2.polylines(img_vis, [pts_pred], True, (0, 0, 255), 2)
-        cv2.polylines(img_vis, [pts_true], True, (0, 255, 0), 1)
-        cv2.putText(img_vis, f"{pred_prob:.2f}", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,0), 2)
+        cv2.polylines(img_vis, [pred_px.reshape(-1,2).astype(int)], True, (0,0,255), 2)
+        cv2.polylines(img_vis, [true_px.reshape(-1,2).astype(int)], True, (0,255,0), 1)
 
         plt.figure(figsize=(5,5))
         plt.imshow(img_vis[..., ::-1])
-        plt.title(f"MAE_px={mae_px:.1f}")
+        plt.title("MAE_px", mae_px)
         plt.axis('off')
         plt.show()
 
-# Inspect some predictions
 inspect_predictions(model, df, X_test, y_cls_test, y_reg_test, OG_W, OG_H, n=5)
 
-# ==== FINE-TUNE REGRESSOR ON POSITIVES ONLY ====
-print("\nFine-tuning regressor on positives only...")
+# Finetuning on positives only
 pos_idx = np.where(y_cls_train == 1)[0]
 X_pos, y_pos = X_train[pos_idx], y_reg_train[pos_idx]
 
@@ -133,7 +124,6 @@ for layer in reg_head.layers[:-1]:
 reg_head.compile(optimizer=keras.optimizers.Adam(3e-4), loss=Huber(), metrics=['mae'])
 reg_head.fit(X_pos, y_pos, epochs=30, batch_size=16, validation_split=0.1)
 
-# Save both versions
 model.save("apriltag_multitask_model.keras")
 reg_head.save("apriltag_regressor_finetuned.keras")
 
