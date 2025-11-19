@@ -1,0 +1,16 @@
+@echo off
+set PYTHONPATH=%cd%
+python src/realtime/http_ingest_server.py ^
+  --artifacts "..\..\Experiments\imu_lstm_v2\models_artifacts" ^
+  --window 12 ^
+  --threshold 0.45 ^
+  --threshold_left 0.38 --threshold_right 0.52 --threshold_straight 0.32 --threshold_jump 0.55 ^
+  --debounce 1 --debounce_straight 1 --debounce_jump 1 ^
+  --turn_fast_thr 0.50 --turn_min_gyro 0.08 ^
+  --quiet_gyro 0.09 --quiet_ms 120 ^
+  --jump_gate 12.0 --jump_hold_ms 100 ^
+  --ema_alpha 0.74 ^
+  --yaw_prior_k 1.8 --yaw_prior_min 0.14 --yaw_prior_max 0.25 ^
+  --auto_calib 0 ^
+  --host 0.0.0.0 --http_port 5000
+pause

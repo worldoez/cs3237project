@@ -1,0 +1,41 @@
+{
+  "config": {
+    "raw_dir": "Experiments/imu_data_collect/imu_data2",
+    "out_dir": "Experiments/imu_lstm_v2/models_artifacts",
+    "window": 150,
+    "stride": 25,
+    "batch": 128,
+    "epochs": 30,
+    "lr": 0.001,
+    "hidden": 96,
+    "layers": 2,
+    "dropout": 0.3,
+    "bidirectional": true,
+    "val_size": 0.15,
+    "test_size": 0.15,
+    "seed": 42,
+    "effective_window": 150,
+    "effective_stride": 25
+  },
+  "stats": {
+    "accel_x": {
+      "jump": -0.7525079733333333,
+      "left": -1.5699773866666669,
+      "right": -0.5094709066666667,
+      "straight": -0.7746011199999999
+    },
+    "accel_y": {
+      "jump": 9.262918786666667,
+      "left": 9.324310213333334,
+      "right": 9.504685373333333,
+      "straight": 9.427229106666665
+    },
+    "accel_z": {
+      "jump": -1.6837493333333335,
+      "left": -2.6773462533333334,
+      "right": -2.8608918133333336,
+      "straight": -2.8864548
+    }
+  },
+  "best_val_acc": 0.9943502824858758
+}
