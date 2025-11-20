@@ -12,7 +12,7 @@ def post_distance():
 
     data = request.get_json() or {}
 
-    if "distance" not in data:
+    if "distance" not in data:E
         return {"ok": False, "error": "Missing [distance] field in request."}, 400
 
     distance_data = {

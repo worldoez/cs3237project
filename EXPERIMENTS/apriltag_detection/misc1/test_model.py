@@ -3,7 +3,6 @@ import numpy as np
 from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 
-
 def plot_predicted_corners(img_array, corners, label="pred"):
     plt.figure()
     if img_array.ndim == 2:

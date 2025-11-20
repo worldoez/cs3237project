@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
-from distance.estimate_dist import calc_dist
+from ...Experiments.server.estimate_dist import calc_dist
 
 OG_W = 320
 OG_H = 240 

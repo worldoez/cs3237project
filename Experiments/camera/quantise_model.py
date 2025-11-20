@@ -4,7 +4,6 @@ from tensorflow.keras.models import load_model
 model = load_model('apriltag_regressor_finetuned.keras')
 finetuned_model = load_model("apriltag_regressor_finetuned.keras")
 
-# convert to tflite quantised
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
 tflite_model = converter.convert()

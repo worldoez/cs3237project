@@ -1,15 +1,14 @@
-from apriltag_detection.apriltag_cv_detection import *
-from apriltag_detection.AprilTag import AprilTag
-from distance.estimate_dist import calc_dist
+from apriltag_cv_detection import *
+from ...Experiments.server.estimate_dist import calc_dist
 
 import os
 import pandas as pd
 
-if __name__ == "__main0__":
-    detector = initialise_detector()
-    cap = cv2.VideoCapture(0)
-    if cap.isOpened():
-        detect_apriltag_from_cv(cap, detector)
+# if __name__ == "__main__":
+#     detector = initialise_detector()
+#     cap = cv2.VideoCapture(0)
+#     if cap.isOpened():
+#         detect_apriltag_from_cv(cap, detector)
 
 if __name__ == "__main__":
     mode = input("mode [i]nput or mode [c]onvert: ")

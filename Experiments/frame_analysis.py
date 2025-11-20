@@ -2,7 +2,7 @@ import cv2
 import requests
 import numpy as np
 
-# from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model
 from distance.estimate_dist import *
 from apriltag_detection.basic_apriltag_roi_detection import (
     is_apriltag_present,
@@ -30,7 +30,7 @@ def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=
     stream = requests.get(url, stream=True)
     print("Stream connected")
 
-    # corners_model = load_model(cnn_model)
+    corners_model = load_model(cnn_model)
     bytes_data = b""
 
     last_capture_time = 0
@@ -63,9 +63,8 @@ def run_cnn_model(cnn_model="apriltag_regressor_finetuned.keras", interval_time=
                             forward_distance = -1.0
                             is_tag_present = False
                         else:
-                            corner_pred = compute_corners_from_img(img_input)
+                            corner_pred = corners_model.predict(img_input, verbose=0)[0]
                             computed_center = compute_center_from_corners(corner_pred)
-                            # corner_pred = corners_model.predict(img_input, verbose=0)[0]
                             pred_corners_px = corner_pred.copy()
                             pred_corners_px[0::2] *= OG_W
                             pred_corners_px[1::2] *= OG_H

@@ -128,6 +128,6 @@ def plot_predicted_corners(img_array, corners, label="Predicted"):
 
 if __name__ == "__main__":
     detector = initialise_detector()
-    filepath = "captured_frames/frame_5629.jpg"
+    filepath = "captured_frames/frame_279.jpg"
     detection = detect_apriltag_from_image(filepath, detector)
     # print(detection)
